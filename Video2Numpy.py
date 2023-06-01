@@ -1,7 +1,6 @@
 import cv2
 import time
 import numpy as np
-# import matplotlib.pyplot as plt
 import os
 from tqdm import tqdm
 import pandas as pd
@@ -9,13 +8,13 @@ import csv
 import json
 import pdb
 
-class Compute_Optical_Flow:
+class ComputeOpticalFlow:
     """This class is computing optical flow of given video."""
-    def __init__(self,video): 
+    def __init__(self, video): 
         self.video=video
 
     # Transform Video to .npy Format
-    def getOpticalFlow(self):
+    def get_optical_flow(self):
         """Calculate dense optical flow of input video
         Args:
             video: the input video with shape of [frames,height,width,channel]. dtype=np.array
@@ -33,7 +32,8 @@ class Compute_Optical_Flow:
         flows = []
         for i in range(0,len(video)-1):
             # calculate optical flow between each pair of frames
-            flow = cv2.calcOpticalFlowFarneback(gray_video[i], gray_video[i+1], None, 0.5, 3, 15, 3, 5, 1.2, cv2.OPTFLOW_FARNEBACK_GAUSSIAN)
+            flow = cv2.calcOpticalFlowFarneback(
+                gray_video[i], gray_video[i+1], None, 0.5, 3, 15, 3, 5, 1.2, cv2.OPTFLOW_FARNEBACK_GAUSSIAN)
             # subtract the mean in order to eliminate the movement of camera
             flow[..., 0] -= np.mean(flow[..., 0])
             flow[..., 1] -= np.mean(flow[..., 1])
@@ -49,9 +49,9 @@ class Compute_Optical_Flow:
         return np.array(flows, dtype=np.float32)
 
 
-class Video_Handler:
+class VideoHandler:
     """ Implementing this class we can convery a Video to npy format and Transfer all the videos and save it to targeted directory"""
-    def __init__(self,file_path,file_dir,save_dir):
+    def __init__(self, file_path, file_dir, save_dir):
         """ Initialisation function
         Arguments:
             file path=video_path
@@ -62,7 +62,7 @@ class Video_Handler:
         self.file_dir=file_dir
         self.save_dir=save_dir
     
-    def Video2Npy(self, resize=(224,224)):
+    def video_to_npy(self, resize=(224,224)):
         """Load video and tansfer it into .npy format
         Args:
             file_path: the path of video file
@@ -85,23 +85,22 @@ class Video_Handler:
                 frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
                 frame = np.reshape(frame, (224,224,3))
                 frames.append(frame)
-        except:
+        except Exception:
             print("Error: ", file_path, len_frames,i)
         finally:
             frames = np.array(frames)
             cap.release()
 
         # Get the optical flow of video
-        obj=Compute_Optical_Flow(frames)
-        # flows = getOpticalFlow(frames)
-        flows=obj.getOpticalFlow()
+        obj=ComputeOpticalFlow(frames)
+        flows=obj.get_optical_flow()
         result = np.zeros((len(flows),224,224,5))
         result[...,:3] = frames
         result[...,3:] = flows
 
         return result
 
-    def Save2Npy(file_dir, save_dir):
+    def save_to_npy(file_dir, save_dir):
         """Transfer all the videos and save them into specified directory
         Args:
             file_dir: source folder of target videos
@@ -119,8 +118,8 @@ class Video_Handler:
             # Get dest
             save_path = os.path.join(save_dir, video_name+'.npy')
             # Load and preprocess video
-            obj=Video_Handler(video_path,"","")
-            data = obj.Video2Npy(resize=(224,224))
+            obj=VideoHandler(video_path,"","")
+            data = obj.video_to_npy(resize=(224,224))
             data = np.uint8(data)
             # Save as .npy file
             np.save(save_path, data)
@@ -145,15 +144,9 @@ if __name__=="__main__":
             npy_dict[save_path] = label
         else:
             continue
-        """
-        video_path = "~/Desktop/Ameya/abc.mp4"
-        video_path = "~/Desktop/Ameya/abc.npy"
-        Vdeo_Handler(video_path, target_path)
-        """
-        
-        obj=Video_Handler(source,src_path,target_path)
-        data=obj.Video2Npy(resize=(224,224))
-        # data = Video2Npy(file_path=source, resize=(224,224))
+      
+        obj=VideoHandler(source,src_path,target_path)
+        data=obj.video_to_npy(resize=(224,224))
         data = np.uint8(data)
         # Save as .npy file
         np.save(save_path, data)
